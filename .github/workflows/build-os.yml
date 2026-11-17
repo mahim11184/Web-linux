@@ -1,0 +1,59 @@
+name: Build Custom Win11 OS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc cpio unzip rsync file wget libncurses-dev
+
+      - name: Download Buildroot
+        run: |
+          wget https://buildroot.org
+          tar -xzf buildroot-2024.02.1.tar.gz
+          mv buildroot-2024.02.1 buildroot
+
+      - name: Download Pre-compiled Gecko (Firefox ESR)
+        run: |
+          mkdir -p overlay/opt/gecko
+          wget -O firefox.tar.bz2 "https://mozilla.org"
+          tar -xjf firefox.tar.bz2 -C overlay/opt/gecko --strip-components=1
+          chmod +x overlay/etc/init.d/S99win11
+
+      - name: Configure Kernel, Graphics & ISO
+        run: |
+          cd buildroot
+          make pc_x86_64_bios_defconfig
+          ./utils/config --set-str BR2_ROOTFS_OVERLAY "../overlay"
+          ./utils/config --enable BR2_TOOLCHAIN_BUILDROOT_GLIBC
+          ./utils/config --disable BR2_TOOLCHAIN_BUILDROOT_UCLIBC
+          ./utils/config --enable BR2_PACKAGE_XORG7
+          ./utils/config --enable BR2_PACKAGE_XSERVER_XORG_SERVER
+          ./utils/config --enable BR2_PACKAGE_XDRIVER_XF86_VIDEO_VESA
+          ./utils/config --enable BR2_PACKAGE_XDRIVER_XF86_VIDEO_FBDEV
+          ./utils/config --enable BR2_PACKAGE_XDRIVER_XF86_INPUT_LIBINPUT
+          ./utils/config --enable BR2_PACKAGE_LIBGTK3
+          ./utils/config --enable BR2_PACKAGE_DBUS_GLIB
+          ./utils/config --enable BR2_PACKAGE_ALSA_LIB
+          ./utils/config --enable BR2_TARGET_ROOTFS_ISO9660
+          ./utils/config --enable BR2_TARGET_ROOTFS_ISO9660_HYBRID
+          make olddefconfig
+
+      - name: Compile Custom OS (Takes ~20-30 mins)
+        run: |
+          cd buildroot
+          make -j$(nproc)
+
+      - name: Upload Bootable ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: My-Win11-Custom-OS
+          path: buildroot/output/images/rootfs.iso9660
