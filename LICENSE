@@ -1,0 +1,6 @@
+This project contains original configuration and web interface files.
+
+Buildroot, Linux, Mozilla Firefox, and other downloaded components remain
+subject to their respective upstream licenses. This repository does not
+relicense those projects. Review upstream license notices before redistributing
+a built image.
