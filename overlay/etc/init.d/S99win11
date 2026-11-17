@@ -1,0 +1,13 @@
+#!/bin/sh
+case "$1" in
+  start)
+    echo "Starting Win 11 Gecko UI..."
+    export DISPLAY=:0
+    Xorg :0 vt1 &
+    sleep 2
+    /opt/gecko/firefox --kiosk --no-remote file:///var/www/win11/index.html &
+    ;;
+  stop)
+    killall firefox Xorg
+    ;;
+esac
