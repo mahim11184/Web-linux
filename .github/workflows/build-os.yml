@@ -55,6 +55,7 @@ jobs:
           set -eux
           cd buildroot
           make pc_x86_64_bios_defconfig
+          chmod 0755 ../board/web-linux/post-build.sh
 
           ./utils/config --set-str BR2_ROOTFS_OVERLAY "../overlay"
           ./utils/config --set-str BR2_ROOTFS_USERS_TABLES "../board/web-linux/users.txt"
