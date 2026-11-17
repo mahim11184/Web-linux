@@ -1,16 +1,132 @@
+name: Build Web Linux ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-os.yml"
+      - "board/**"
+      - "overlay/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-linux-iso-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build x86_64 live ISO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out Web Linux
+        uses: actions/checkout@v4
+
+      - name: Install host build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc build-essential bzip2 cpio file g++ gcc git gzip \
+            libncurses-dev make patch perl python3 rsync unzip wget \
+            xz-utils zlib1g-dev libssl-dev libelf-dev
+
       - name: Download Buildroot
         run: |
-          H="https:/"
-          G="github.com"
-          P="buildroot/buildroot.git"
-          git clone --depth 1 --branch 2024.08 "${H}/${G}/${P}"
+          git clone --depth 1 --branch 2026.08.x \
+            https://github.com/buildroot/buildroot.git buildroot
 
-      - name: Download Pre-compiled Gecko
+      - name: Download Mozilla Firefox ESR
         run: |
+          set -eux
           mkdir -p overlay/opt/gecko
-          H="https:/"
-          M="download.mozilla.org"
-          Q="?product=firefox-esr-latest&os=linux64&lang=en-US"
-          wget -O firefox.tar.xz "${H}/${M}/${Q}"
-          tar -xf firefox.tar.xz -C overlay/opt/gecko --strip-components=1
-          chmod +x overlay/etc/init.d/S99win11
+          curl --fail --location --retry 3 \
+            "https://download.mozilla.org/?product=firefox-esr-latest&os=linux64&lang=en-US" \
+            --output firefox-esr.tar.xz
+          tar -xJf firefox-esr.tar.xz \
+            --directory overlay/opt/gecko --strip-components=1
+          test -x overlay/opt/gecko/firefox
+          chmod 0755 overlay/etc/init.d/S99win11
+
+      - name: Configure Buildroot
+        run: |
+          set -eux
+          cd buildroot
+          make pc_x86_64_bios_defconfig
+
+          ./utils/config --set-str BR2_ROOTFS_OVERLAY "../overlay"
+          ./utils/config --set-str BR2_ROOTFS_USERS_TABLES "../board/web-linux/users.txt"
+          ./utils/config --set-str BR2_ROOTFS_POST_BUILD_SCRIPT "../board/web-linux/post-build.sh"
+          ./utils/config --enable BR2_TOOLCHAIN_BUILDROOT_GLIBC
+          ./utils/config --disable BR2_TOOLCHAIN_BUILDROOT_UCLIBC
+
+          # BIOS + 64-bit UEFI GRUB boot support.
+          ./utils/config --enable BR2_TARGET_GRUB2
+          ./utils/config --enable BR2_TARGET_GRUB2_I386_PC
+          ./utils/config --enable BR2_TARGET_GRUB2_X86_64_EFI
+          ./utils/config --set-str BR2_TARGET_GRUB2_BUILTIN_MODULES_PC "boot linux iso9660 biosdisk"
+          ./utils/config --set-str BR2_TARGET_GRUB2_BUILTIN_MODULES_EFI "boot linux iso9660 part_gpt fat"
+          ./utils/config --enable BR2_TARGET_ROOTFS_ISO9660
+          ./utils/config --enable BR2_TARGET_ROOTFS_ISO9660_GRUB2
+          ./utils/config --enable BR2_TARGET_ROOTFS_ISO9660_INITRD
+          ./utils/config --enable BR2_TARGET_ROOTFS_ISO9660_EFI_BOOTLOADER
+          ./utils/config --set-str BR2_TARGET_ROOTFS_ISO9660_BOOT_MENU "../board/web-linux/grub.cfg"
+
+          # Xorg, input and fallback video drivers.
+          ./utils/config --enable BR2_PACKAGE_XORG7
+          ./utils/config --enable BR2_PACKAGE_XSERVER_XORG_SERVER
+          ./utils/config --enable BR2_PACKAGE_XSERVER_XORG_SERVER_MODULAR
+          ./utils/config --enable BR2_PACKAGE_XDRIVER_XF86_VIDEO_VESA
+          ./utils/config --enable BR2_PACKAGE_XDRIVER_XF86_VIDEO_FBDEV
+          ./utils/config --enable BR2_PACKAGE_XDRIVER_XF86_INPUT_LIBINPUT
+          ./utils/config --enable BR2_PACKAGE_XAPP_XINIT
+          ./utils/config --enable BR2_PACKAGE_XAPP_XRANDR
+
+          # Browser runtime libraries and desktop services.
+          ./utils/config --enable BR2_PACKAGE_LIBGTK3
+          ./utils/config --enable BR2_PACKAGE_FONTCONFIG
+          ./utils/config --enable BR2_PACKAGE_DBUS
+          ./utils/config --enable BR2_PACKAGE_DBUS_GLIB
+          ./utils/config --enable BR2_PACKAGE_ALSA_LIB
+          ./utils/config --enable BR2_PACKAGE_CONNMAN
+          ./utils/config --enable BR2_PACKAGE_CONNMAN_WIFI
+          ./utils/config --enable BR2_PACKAGE_CONNMAN_CLIENT
+          ./utils/config --enable BR2_PACKAGE_WIRELESS_REGDB
+          ./utils/config --enable BR2_PACKAGE_MESA3D
+          ./utils/config --enable BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_SOFTPIPE
+          ./utils/config --enable BR2_PACKAGE_MESA3D_OPENGL_GLX
+          ./utils/config --enable BR2_PACKAGE_MESA3D_OPENGL_EGL
+          ./utils/config --enable BR2_PACKAGE_LINUX_FIRMWARE
+
+          make olddefconfig
+
+          # Fail early if a critical option was dropped due to a dependency.
+          grep -q '^BR2_TARGET_ROOTFS_ISO9660=y$' .config
+          grep -q '^BR2_TARGET_ROOTFS_ISO9660_GRUB2=y$' .config
+          grep -q '^BR2_TARGET_ROOTFS_ISO9660_INITRD=y$' .config
+          grep -q '^BR2_TARGET_ROOTFS_ISO9660_EFI_BOOTLOADER=y$' .config
+          grep -q '^BR2_TOOLCHAIN_BUILDROOT_GLIBC=y$' .config
+
+      - name: Build the operating system
+        run: |
+          cd buildroot
+          make -j"$(nproc)"
+
+      - name: Verify ISO output
+        run: |
+          set -eux
+          test -s buildroot/output/images/rootfs.iso9660
+          mkdir -p dist
+          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
+          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
+          file dist/Web-Linux.iso
+
+      - name: Upload bootable ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: Web-Linux-ISO
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
