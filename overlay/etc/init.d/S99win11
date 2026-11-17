@@ -1,13 +1,55 @@
 #!/bin/sh
+
+start_desktop() {
+    echo "Starting Web Linux Gecko desktop..."
+
+    mkdir -p /run/dbus /var/log /tmp/.X11-unix
+
+    if [ -x /usr/bin/dbus-uuidgen ]; then
+        /usr/bin/dbus-uuidgen --ensure=/etc/machine-id 2>/dev/null || true
+    fi
+    if [ -x /usr/bin/dbus-daemon ]; then
+        /usr/bin/dbus-daemon --system --fork 2>/dev/null || true
+    fi
+
+    /usr/bin/Xorg :0 vt1 -nolisten tcp -noreset -ac \
+        -logfile /var/log/Xorg.0.log >/dev/null 2>&1 &
+    echo "$!" > /var/run/web-linux-xorg.pid
+
+    tries=0
+    while [ "$tries" -lt 30 ] && [ ! -S /tmp/.X11-unix/X0 ]; do
+        if ! kill -0 "$(cat /var/run/web-linux-xorg.pid)" 2>/dev/null; then
+            break
+        fi
+        sleep 1
+        tries=$((tries + 1))
+    done
+
+    if [ ! -S /tmp/.X11-unix/X0 ]; then
+        echo "Web Linux: Xorg did not start. Check /var/log/Xorg.0.log"
+        return 1
+    fi
+
+    su web -c 'export DISPLAY=:0 HOME=/home/web MOZ_ENABLE_WAYLAND=0; exec /opt/gecko/firefox --kiosk --no-remote --profile /home/web/.mozilla-profile file:///var/www/win11/index.html' \
+        >/var/log/web-linux-gecko.log 2>&1 &
+    echo "$!" > /var/run/web-linux-gecko.pid
+}
+
+stop_desktop() {
+    if [ -s /var/run/web-linux-gecko.pid ]; then
+        kill "$(cat /var/run/web-linux-gecko.pid)" 2>/dev/null || true
+        rm -f /var/run/web-linux-gecko.pid
+    fi
+    if command -v killall >/dev/null 2>&1; then
+        killall firefox Xorg 2>/dev/null || true
+    fi
+    rm -f /var/run/web-linux-xorg.pid
+}
+
 case "$1" in
-  start)
-    echo "Starting Win 11 Gecko UI..."
-    export DISPLAY=:0
-    Xorg :0 vt1 &
-    sleep 2
-    /opt/gecko/firefox --kiosk --no-remote file:///var/www/win11/index.html &
-    ;;
-  stop)
-    killall firefox Xorg
-    ;;
+    start) start_desktop ;;
+    stop) stop_desktop ;;
+    restart) stop_desktop; sleep 1; start_desktop ;;
+    *) echo "Usage: $0 {start|stop|restart}"; exit 1 ;;
 esac
+exit 0
