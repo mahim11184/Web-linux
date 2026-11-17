@@ -85,10 +85,18 @@ jobs:
           ./utils/config --enable BR2_PACKAGE_XDRIVER_XF86_INPUT_LIBINPUT
           ./utils/config --enable BR2_PACKAGE_XAPP_XINIT
           ./utils/config --enable BR2_PACKAGE_XAPP_XRANDR
+          ./utils/config --enable BR2_PACKAGE_XLIB_LIBXCOMPOSITE
+          ./utils/config --enable BR2_PACKAGE_XLIB_LIBXDAMAGE
+          ./utils/config --enable BR2_PACKAGE_XLIB_LIBXSCRNSAVER
+          ./utils/config --enable BR2_PACKAGE_XLIB_LIBXTST
+          ./utils/config --enable BR2_PACKAGE_XLIB_LIBXCURSOR
+          ./utils/config --enable BR2_PACKAGE_XLIB_LIBXI
+          ./utils/config --enable BR2_PACKAGE_LIBXKBCOMMON
 
           # Browser runtime libraries and desktop services.
           ./utils/config --enable BR2_PACKAGE_LIBGTK3
           ./utils/config --enable BR2_PACKAGE_FONTCONFIG
+          ./utils/config --enable BR2_PACKAGE_CA_CERTIFICATES
           ./utils/config --enable BR2_PACKAGE_DBUS
           ./utils/config --enable BR2_PACKAGE_DBUS_GLIB
           ./utils/config --enable BR2_PACKAGE_ALSA_LIB
