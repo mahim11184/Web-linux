@@ -59,6 +59,7 @@ jobs:
           ./utils/config --set-str BR2_ROOTFS_OVERLAY "../overlay"
           ./utils/config --set-str BR2_ROOTFS_USERS_TABLES "../board/web-linux/users.txt"
           ./utils/config --set-str BR2_ROOTFS_POST_BUILD_SCRIPT "../board/web-linux/post-build.sh"
+          ./utils/config --set-str BR2_TARGET_GENERIC_GETTY_PORT "tty2"
           ./utils/config --enable BR2_TOOLCHAIN_BUILDROOT_GLIBC
           ./utils/config --disable BR2_TOOLCHAIN_BUILDROOT_UCLIBC
 
