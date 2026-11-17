@@ -1,0 +1,2 @@
+# username uid group gid password home shell groups comment
+web 1000 web 1000 * /home/web /bin/sh - Web Linux kiosk user
