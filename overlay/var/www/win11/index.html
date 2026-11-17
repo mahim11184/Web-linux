@@ -1,12 +1,31 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <title>My Win 11 OS</title>
-  <style>
-    body { margin: 0; background: #0078D4; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101a35">
+  <title>Web Linux - Gecko Desktop</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
 </head>
 <body>
-  <h1>Welcome to My Custom Linux + Gecko Win 11 OS!</h1>
+  <main class="desktop">
+    <header class="topbar"><div class="brand"><span class="brand-mark">W</span><span>WEB LINUX</span><span class="edition">GECKO EDITION</span></div><div class="top-status"><span class="status-dot"></span> Live session <span>•</span> Local desktop</div></header>
+    <section class="welcome">
+      <p class="eyebrow">YOUR WEB-FIRST DESKTOP</p>
+      <h1>A fresh space<br><span>to get things done.</span></h1>
+      <p class="intro">A lightweight Linux system with a desktop powered by HTML, CSS, JavaScript and Mozilla Gecko.</p>
+      <div class="welcome-actions"><button class="primary-button" id="startButton" aria-expanded="false" aria-controls="startMenu">▦ &nbsp; Open menu</button><button class="ghost-button" data-app="about">About this build</button></div>
+    </section>
+    <section class="quick-grid" aria-label="Desktop shortcuts">
+      <button class="shortcut" data-app="browser"><span class="shortcut-icon browser-icon">◎</span><span><strong>Browser</strong><small>Gecko kiosk</small></span><span class="shortcut-arrow">↗</span></button>
+      <button class="shortcut" data-app="files"><span class="shortcut-icon files-icon">▰</span><span><strong>Files</strong><small>Local workspace</small></span><span class="shortcut-arrow">↗</span></button>
+      <button class="shortcut" data-app="settings"><span class="shortcut-icon settings-icon">⚙</span><span><strong>Settings</strong><small>System information</small></span><span class="shortcut-arrow">↗</span></button>
+    </section>
+    <section class="info-card"><div class="info-symbol">✦</div><div><p class="info-title">Built around the web</p><p class="info-copy">This desktop is a local HTML application. Customise its HTML, CSS and JavaScript in <code>/var/www/win11/</code>.</p></div><span class="info-tag">HTML5</span></section>
+    <div class="start-menu" id="startMenu" hidden><div class="menu-heading"><div><strong>Web Linux</strong><small>Gecko desktop</small></div><span class="menu-avatar">W</span></div><div class="menu-label">QUICK ACCESS</div><button data-app="browser">◎ <span>Browser</span></button><button data-app="files">▰ <span>Files</span></button><button data-app="settings">⚙ <span>Settings</span></button><div class="menu-footer">Powered by Linux + Mozilla Gecko</div></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <footer class="taskbar"><button class="task-start" id="taskStart" aria-label="Open start menu">▦</button><div class="taskbar-caption">Web Linux</div><div class="taskbar-spacer"></div><div class="task-time"><strong id="clock">--:--</strong><small id="date">Loading date</small></div></footer>
+  </main>
 </body>
 </html>
