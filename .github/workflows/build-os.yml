@@ -13,19 +13,17 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential bc cpio unzip rsync file wget libncurses-dev
+          sudo apt-get install -y build-essential bc cpio unzip rsync file wget git libncurses-dev
 
       - name: Download Buildroot
         run: |
-          wget https://buildroot.org
-          tar -xzf buildroot-2024.02.1.tar.gz
-          mv buildroot-2024.02.1 buildroot
+          git clone --depth 1 --branch 2024.08 https://github.com
 
       - name: Download Pre-compiled Gecko (Firefox ESR)
         run: |
           mkdir -p overlay/opt/gecko
-          wget -O firefox.tar.bz2 "https://mozilla.org"
-          tar -xjf firefox.tar.bz2 -C overlay/opt/gecko --strip-components=1
+          wget -O firefox.tar.xz "https://mozilla.org"
+          tar -xf firefox.tar.xz -C overlay/opt/gecko --strip-components=1
           chmod +x overlay/etc/init.d/S99win11
 
       - name: Configure Kernel, Graphics & ISO
