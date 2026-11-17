@@ -1,0 +1,4 @@
+/buildroot/
+/dist/
+/firefox-esr.tar.xz
+*.iso
