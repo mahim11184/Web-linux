@@ -17,12 +17,14 @@ jobs:
 
       - name: Download Buildroot
         run: |
-          git clone --depth 1 --branch 2024.08 https://github.com
+          REPO="https://github.com"
+          git clone --depth 1 --branch 2024.08 "$REPO"
 
-      - name: Download Pre-compiled Gecko (Firefox ESR)
+      - name: Download Pre-compiled Gecko
         run: |
           mkdir -p overlay/opt/gecko
-          wget -O firefox.tar.xz "https://mozilla.org"
+          URL="https://mozilla.org"
+          wget -O firefox.tar.xz "$URL"
           tar -xf firefox.tar.xz -C overlay/opt/gecko --strip-components=1
           chmod +x overlay/etc/init.d/S99win11
 
