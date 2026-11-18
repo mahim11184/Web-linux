@@ -8,6 +8,11 @@ on:
       - ".github/workflows/build-os.yml"
       - "board/**"
       - "overlay/**"
+  pull_request:
+    paths:
+      - ".github/workflows/build-os.yml"
+      - "board/**"
+      - "overlay/**"
 
 permissions:
   contents: read
@@ -24,6 +29,26 @@ jobs:
     steps:
       - name: Check out Web Linux
         uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        run: |
+          set -eux
+          # Buildroot needs several GB of temporary space. Remove large
+          # preinstalled toolchains that this Linux image does not use.
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /usr/local/lib/android \
+            /opt/ghc \
+            /usr/local/share/powershell \
+            /opt/hostedtoolcache/CodeQL
+          sudo apt-get clean
+          df -h /
+          available_kb="$(df -Pk "$GITHUB_WORKSPACE" | awk 'END {print $4}')"
+          echo "Available workspace disk: $((available_kb / 1024 / 1024)) GiB"
+          if [ "$available_kb" -lt 8388608 ]; then
+            echo "::error::Less than 8 GiB of disk space is available for the Buildroot build."
+            exit 1
+          fi
 
       - name: Install host build dependencies
         run: |
@@ -42,7 +67,7 @@ jobs:
         run: |
           set -eux
           mkdir -p overlay/opt/gecko
-          curl --fail --location --retry 3 \
+          curl --fail --location --retry 3 --retry-all-errors \
             "https://download.mozilla.org/?product=firefox-esr-latest&os=linux64&lang=en-US" \
             --output firefox-esr.tar.xz
           tar -xJf firefox-esr.tar.xz \
@@ -108,7 +133,13 @@ jobs:
           ./utils/config --enable BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_SOFTPIPE
           ./utils/config --enable BR2_PACKAGE_MESA3D_OPENGL_GLX
           ./utils/config --enable BR2_PACKAGE_MESA3D_OPENGL_EGL
-          ./utils/config --enable BR2_PACKAGE_LINUX_FIRMWARE
+
+          # Do not enable the monolithic linux-firmware package. Its upstream
+          # source archive is over 600 MB compressed and expands substantially;
+          # the previous build exhausted the GitHub runner disk while staging it.
+          # No individual firmware families had been selected, so it added no
+          # usable Wi-Fi firmware to the image.
+          ./utils/config --disable BR2_PACKAGE_LINUX_FIRMWARE
 
           make olddefconfig
 
@@ -118,11 +149,15 @@ jobs:
           grep -q '^BR2_TARGET_ROOTFS_ISO9660_INITRD=y$' .config
           grep -q '^BR2_TARGET_ROOTFS_ISO9660_EFI_BOOTLOADER=y$' .config
           grep -q '^BR2_TOOLCHAIN_BUILDROOT_GLIBC=y$' .config
+          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
 
       - name: Build the operating system
         run: |
+          set -eux
+          df -h /
           cd buildroot
           make -j"$(nproc)"
+          df -h /
 
       - name: Verify ISO output
         run: |
@@ -132,6 +167,7 @@ jobs:
           cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
           sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
           file dist/Web-Linux.iso
+          du -h dist/Web-Linux.iso
 
       - name: Upload bootable ISO
         uses: actions/upload-artifact@v4
