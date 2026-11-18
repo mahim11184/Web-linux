@@ -153,13 +153,29 @@ jobs:
           make olddefconfig
 
           # Fail early if a critical option was dropped due to a dependency.
-          grep -q '^BR2_TARGET_ROOTFS_ISO9660=y$' .config
-          grep -q '^BR2_TARGET_ROOTFS_ISO9660_GRUB2=y$' .config
-          grep -q '^BR2_TARGET_ROOTFS_ISO9660_INITRD=y$' .config
-          grep -q '^BR2_TARGET_ROOTFS_ISO9660_EFI_BOOTLOADER=y$' .config
-          grep -q '^BR2_TARGET_ROOTFS_CPIO=y
-          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
-
+          grep -q BR2_TARGET_ROOTFS_ISO9660=y .config
+          grep -q BR2_TARGET_ROOTFS_ISO9660_GRUB2=y .config
+          grep -q BR2_TARGET_ROOTFS_ISO9660_INITRD=y .config
+          grep -q BR2_TARGET_ROOTFS_ISO9660_EFI_BOOTLOADER=y .config
+          grep -q BR2_TARGET_ROOTFS_CPIO=y .config
+          grep -q BR2_TOOLCHAIN_BUILDROOT_GLIBC=y .config
+          grep -q BR2_PACKAGE_LINUX_FIRMWARE .config
+          if grep -q BR2_PACKAGE_LINUX_FIRMWARE=y .config; then
+            echo ::error::The-oversized-Linux-firmware-bundle-must-stay-disabled
+            exit 1
+          fi
+          if grep -q BR2_TARGET_ROOTFS_EXT2=y .config; then
+            echo ::error::The-unused-ext2-image-must-stay-disabled
+            exit 1
+          fi
+          if grep -q BR2_PACKAGE_HOST_GENIMAGE=y .config; then
+            echo ::error::The-unused-genimage-image-must-stay-disabled
+            exit 1
+          fi
+          if grep -q genimage.sh .config; then
+            echo ::error::The-unused-genimage-post-image-script-must-stay-disabled
+            exit 1
+          fi
       - name: Build the operating system
         run: |
           set -eux
