@@ -61,7 +61,9 @@ Keep assets local and use relative paths so the desktop works without an interne
 
 ## Current limitations
 
-This is an initial bootable project, not a finished hardware-certified OS. Graphics acceleration and Wi-Fi support vary by PC. Test in a virtual machine before writing the ISO to a USB drive, and keep backups of important data.
+This is an initial bootable project, not a finished hardware-certified OS. Graphics acceleration varies by PC. The image does not bundle the full proprietary Linux-firmware collection; Wi-Fi adapters that require external firmware may not work until their specific firmware is added. Ethernet is the safest first network option. Test in a virtual machine before writing the ISO to a USB drive, and keep backups of important data.
+
+The GitHub Actions build removes unused preinstalled runner toolchains before compiling and skips the oversized monolithic linux-firmware archive. Previously, that archive exhausted the runner's disk during extraction. No individual firmware families were selected in the old configuration, so downloading the archive did not provide usable Wi-Fi firmware.
 
 ## Main project paths
 
