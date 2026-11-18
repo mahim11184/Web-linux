@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: web-linux-iso-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -176,125 +176,6 @@ jobs:
             echo ::error::The-unused-genimage-post-image-script-must-stay-disabled
             exit 1
           fi
-      - name: Build the operating system
-        run: |
-          set -eux
-          df -h /
-          cd buildroot
-          make -j"$(nproc)"
-          df -h /
-
-      - name: Verify ISO output
-        run: |
-          set -eux
-          test -s buildroot/output/images/rootfs.iso9660
-          mkdir -p dist
-          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
-          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
-          file dist/Web-Linux.iso
-          du -h dist/Web-Linux.iso
-
-      - name: Upload bootable ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: Web-Linux-ISO
-          path: dist/
-          if-no-files-found: error
-          retention-days: 14
- .config
-          grep -q '^# BR2_TARGET_ROOTFS_EXT2 is not set
-          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
-
-      - name: Build the operating system
-        run: |
-          set -eux
-          df -h /
-          cd buildroot
-          make -j"$(nproc)"
-          df -h /
-
-      - name: Verify ISO output
-        run: |
-          set -eux
-          test -s buildroot/output/images/rootfs.iso9660
-          mkdir -p dist
-          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
-          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
-          file dist/Web-Linux.iso
-          du -h dist/Web-Linux.iso
-
-      - name: Upload bootable ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: Web-Linux-ISO
-          path: dist/
-          if-no-files-found: error
-          retention-days: 14
- .config
-          grep -q '^# BR2_PACKAGE_HOST_GENIMAGE is not set
-          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
-
-      - name: Build the operating system
-        run: |
-          set -eux
-          df -h /
-          cd buildroot
-          make -j"$(nproc)"
-          df -h /
-
-      - name: Verify ISO output
-        run: |
-          set -eux
-          test -s buildroot/output/images/rootfs.iso9660
-          mkdir -p dist
-          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
-          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
-          file dist/Web-Linux.iso
-          du -h dist/Web-Linux.iso
-
-      - name: Upload bootable ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: Web-Linux-ISO
-          path: dist/
-          if-no-files-found: error
-          retention-days: 14
- .config
-          if grep -Eq '^BR2_ROOTFS_POST_IMAGE_SCRIPT="[^"]' .config; then
-            echo "::error::The unused Buildroot post-image script is still enabled."
-            exit 1
-          fi
-          grep -q '^BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
-          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
-
-      - name: Build the operating system
-        run: |
-          set -eux
-          df -h /
-          cd buildroot
-          make -j"$(nproc)"
-          df -h /
-
-      - name: Verify ISO output
-        run: |
-          set -eux
-          test -s buildroot/output/images/rootfs.iso9660
-          mkdir -p dist
-          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
-          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
-          file dist/Web-Linux.iso
-          du -h dist/Web-Linux.iso
-
-      - name: Upload bootable ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: Web-Linux-ISO
-          path: dist/
-          if-no-files-found: error
-          retention-days: 14
- .config
-          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
-
       - name: Build the operating system
         run: |
           set -eux
