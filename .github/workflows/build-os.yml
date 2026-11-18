@@ -101,6 +101,15 @@ jobs:
           ./utils/config --enable BR2_TARGET_ROOTFS_ISO9660_EFI_BOOTLOADER
           ./utils/config --set-str BR2_TARGET_ROOTFS_ISO9660_BOOT_MENU "../board/web-linux/grub.cfg"
 
+          # This project boots from the ISO's external cpio initrd. The
+          # upstream PC defconfig also enables an unrelated ext2 disk image
+          # and genimage post-image hook. They duplicate the large Firefox
+          # root filesystem and are not used by the bootable ISO.
+          ./utils/config --disable BR2_TARGET_ROOTFS_EXT2
+          ./utils/config --set-str BR2_ROOTFS_POST_IMAGE_SCRIPT ""
+          ./utils/config --set-str BR2_ROOTFS_POST_SCRIPT_ARGS ""
+          ./utils/config --disable BR2_PACKAGE_HOST_GENIMAGE
+
           # Xorg, input and fallback video drivers.
           ./utils/config --enable BR2_PACKAGE_XORG7
           ./utils/config --enable BR2_PACKAGE_XSERVER_XORG_SERVER
@@ -148,7 +157,126 @@ jobs:
           grep -q '^BR2_TARGET_ROOTFS_ISO9660_GRUB2=y$' .config
           grep -q '^BR2_TARGET_ROOTFS_ISO9660_INITRD=y$' .config
           grep -q '^BR2_TARGET_ROOTFS_ISO9660_EFI_BOOTLOADER=y$' .config
-          grep -q '^BR2_TOOLCHAIN_BUILDROOT_GLIBC=y$' .config
+          grep -q '^BR2_TARGET_ROOTFS_CPIO=y
+          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
+
+      - name: Build the operating system
+        run: |
+          set -eux
+          df -h /
+          cd buildroot
+          make -j"$(nproc)"
+          df -h /
+
+      - name: Verify ISO output
+        run: |
+          set -eux
+          test -s buildroot/output/images/rootfs.iso9660
+          mkdir -p dist
+          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
+          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
+          file dist/Web-Linux.iso
+          du -h dist/Web-Linux.iso
+
+      - name: Upload bootable ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: Web-Linux-ISO
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+ .config
+          grep -q '^# BR2_TARGET_ROOTFS_EXT2 is not set
+          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
+
+      - name: Build the operating system
+        run: |
+          set -eux
+          df -h /
+          cd buildroot
+          make -j"$(nproc)"
+          df -h /
+
+      - name: Verify ISO output
+        run: |
+          set -eux
+          test -s buildroot/output/images/rootfs.iso9660
+          mkdir -p dist
+          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
+          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
+          file dist/Web-Linux.iso
+          du -h dist/Web-Linux.iso
+
+      - name: Upload bootable ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: Web-Linux-ISO
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+ .config
+          grep -q '^# BR2_PACKAGE_HOST_GENIMAGE is not set
+          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
+
+      - name: Build the operating system
+        run: |
+          set -eux
+          df -h /
+          cd buildroot
+          make -j"$(nproc)"
+          df -h /
+
+      - name: Verify ISO output
+        run: |
+          set -eux
+          test -s buildroot/output/images/rootfs.iso9660
+          mkdir -p dist
+          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
+          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
+          file dist/Web-Linux.iso
+          du -h dist/Web-Linux.iso
+
+      - name: Upload bootable ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: Web-Linux-ISO
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+ .config
+          if grep -Eq '^BR2_ROOTFS_POST_IMAGE_SCRIPT="[^"]' .config; then
+            echo "::error::The unused Buildroot post-image script is still enabled."
+            exit 1
+          fi
+          grep -q '^BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
+          grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
+
+      - name: Build the operating system
+        run: |
+          set -eux
+          df -h /
+          cd buildroot
+          make -j"$(nproc)"
+          df -h /
+
+      - name: Verify ISO output
+        run: |
+          set -eux
+          test -s buildroot/output/images/rootfs.iso9660
+          mkdir -p dist
+          cp buildroot/output/images/rootfs.iso9660 dist/Web-Linux.iso
+          sha256sum dist/Web-Linux.iso > dist/Web-Linux.iso.sha256
+          file dist/Web-Linux.iso
+          du -h dist/Web-Linux.iso
+
+      - name: Upload bootable ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: Web-Linux-ISO
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+ .config
           grep -q '^# BR2_PACKAGE_LINUX_FIRMWARE is not set$' .config
 
       - name: Build the operating system
